@@ -1,0 +1,228 @@
+import java.util.Scanner;
+import java.lang.Math;
+public class Class1 {
+
+	public static void main(String[] args) {
+		int exercice;
+		 int i=2;
+		while (i>0) {
+			System.out.println("Please note that unless specified all units entered or received are in the International system");
+		System.out.println("enter chapter number (only enter chapters in the syllabus) ");
+		Scanner input = new Scanner(System.in);
+		int chapter = input.nextInt() ;
+		 
+		
+		
+		if (chapter==5) {     while(i>0) {
+	System.out.println("enter exercice number (no zeros on the left) (only enter exercices in the syllabus)");
+	exercice=input.nextInt();
+switch (exercice) {
+    case 5:	{ System.out.println("enter: "); System.out.println("F1 magnitude"); 
+double F1mag=input.nextDouble();System.out.println("F2 magnitude");
+double F2mag=input.nextDouble();System.out.println("F3 magnitude");
+double F3mag=input.nextDouble();System.out.println("tetha1 in degrees"); 
+double tetha1d=input.nextDouble();System.out.println("tetha2 (just enter 0 -.-)");
+double tetha2d=input.nextDouble();System.out.println("tetha3 in degrees");
+double tetha3d=input.nextDouble();System.out.println("mass");
+double m=input.nextDouble();
+double tetha1rad=tetha1d*((Math.PI)/180);
+double tetha2rad=tetha2d*((Math.PI)/180);
+double tetha3rad=tetha3d*((Math.PI)/180);
+double F1x= F1mag*(java.lang.Math.cos(tetha1rad)); double F1y=F1mag*(java.lang.Math.sin(tetha1rad));
+double F2x= F2mag*(java.lang.Math.cos(tetha2rad)); double F2y=F2mag*(java.lang.Math.sin(tetha2rad));
+double F3x= F3mag*(java.lang.Math.cos(tetha3rad)); double F3y=F3mag*(java.lang.Math.sin(tetha3rad));
+double ax=((F1x+F2x+F3x)/(m)); double ay=((F1y+F2y+F3y)/(m));
+double a= Math.sqrt(ax*ax+ay*ay);
+double tetha = java.lang.Math.atan(ay/ax);
+double tethad = tetha * (180/(Math.PI));
+System.out.println("the magnitude of  the acceleration is "+ a + " m/s^2");
+System.out.println("the angle of the asteroid's acceleration is "+ tethad + " degrees");
+break;}
+    case 7 :{ System.out.println("enter: ");System.out.println("F1 magnitude");
+double F1mag=input.nextDouble();System.out.println("acceleration");
+double a=input.nextDouble();System.out.println("mass");
+double m=input.nextDouble();System.out.println("tetha");
+double tethad=input.nextDouble();
+double tetharad= tethad*((Math.PI)/180);
+double ax= -(a)*(java.lang.Math.sin(tetharad)); double ay=-(a)*(java.lang.Math.cos(tetharad));
+double F2x=((m*ax)-F1mag); double F2y=((m*ay));
+double F2mag=Math.sqrt(F2x*F2x+F2y*F2y);
+double direction = java.lang.Math.atan(F2y/F2x);
+double directiond = direction * (180/(Math.PI));
+double finaldirection= ((directiond+180)-360);
+    System.out.println("the unit vector is "+F2x+" i "+F2y +" j" + " N");
+    System.out.println("The magnitude of the force is "+F2mag+ " N");
+    System.out.println("The direction of the force is " +finaldirection+ " degrees");
+break;}
+    case 12 :{System.out.println("enter: ");System.out.println("F1 magnitude");
+double F1mag=input.nextDouble(); System.out.println("F2 magnitude");
+double F2mag=input.nextDouble();System.out.println("the slope of the graph ((Ya-Yb)/(Xa-Xb)");
+double a=input.nextDouble();System.out.println("mass");
+double m=input.nextDouble();
+double tetharad= java.lang.Math.acos(((m*a)-F1mag)/F2mag);
+double tethad= tetharad * (180/(Math.PI));
+    System.out.println("The angle between F1 and F2 is : "+tethad+" degrees");
+    break;}
+    case 29:{ System.out.println("enter: ");System.out.println("Weight in N");
+double Weight=input.nextDouble();System.out.println("Magnitude of the acceleration (a positive value)");
+double a=input.nextDouble();
+double m=Weight/9.8;
+double Ffp=((-a*m)+(Weight));
+double Fpf=-Ffp;
+    System.out.println("The magnitude of the force exerced on the firefighter by the pole is Ffp= "+Ffp + "N");
+    System.out.println("The magnitude of the force exerced on the pole by the firefighter is Ffp= "+Fpf + "N");
+break;}
+    case 44:{System.out.println("enter: ");System.out.println("deceleration (positive value)");
+double a=input.nextDouble();System.out.println("Magnitude of the tesion of the cord");
+double T=input.nextDouble();
+double m=T/(a+9.8);
+double Tb=m*(9.8+a);
+System.out.println("the lamp's mass is "+m+ " N" );
+System.out.println("the cord's tension is "+Tb+" N");
+break;}
+    case 53:{System.out.println("enter: "); System.out.println("T3");
+double T3=input.nextDouble();System.out.println("m1");
+double m1=input.nextDouble();System.out.println("m2");
+double m2=input.nextDouble();System.out.println("m3");
+double m3=input.nextDouble();
+double msys= m1+m2+m3;
+double a= T3/msys;
+double T1=m1*a;
+double T2=(m1+m2)*a;
+System.out.println("The magnitude of the acceleration is "+a+ " m/s*2");
+System.out.println("The magnitude of the T1 is "+T1+ " N");
+System.out.println("The magnitude of the T2 is "+T2+ " N");
+    break;}
+}
+}
+
+break;
+}
+
+
+
+else if (chapter==6) { while(i>0) { 	System.out.println("enter exercice number (no zeros on the left)");exercice=input.nextInt();
+switch(exercice) { 
+	case 9: {System.out.println("enter: ");System.out.println("mass");
+double m=input.nextDouble();System.out.println("F magnitude");
+double F=input.nextDouble();System.out.println("tetha");
+double tetha=input.nextDouble();System.out.println("coefficient of kinetic frition");
+double k=input.nextDouble();
+double N = (F*(java.lang.Math.sin(tetha)))+(m*9.8);
+double f=k*N;
+double a= (F*(java.lang.Math.cos(tetha))-f)/(m);
+System.out.println("The magnitude of the friction is "+f+" N");
+System.out.println("The magnitude of the acceleration is "+a+" m/s*2");
+break;}
+	case 20:{ System.out.println("enter: ");System.out.println("mass of the box of Cheerios");
+double mc=input.nextDouble();System.out.println("mass of the box of Wheaties");
+double mw=input.nextDouble();System.out.println("Magnitude of the frictional force on box of Cheerios");
+double fc=input.nextDouble();System.out.println("Magnitude of the frictional force on box of Wheaties");
+double fw=input.nextDouble();System.out.println("Magnitude of the force F");
+double F=input.nextDouble();
+double m=mc+mw; double f=fc+fw;	
+double a=(F-f)/m;
+double F2=mw*a+fw;
+System.out.println("The magintude of the force on the wheaties box from the cheerios box is "+F2+" N");
+break;}
+	case 40:{ System.out.println("enter: ");System.out.println("angle of the slope");
+double tethad=input.nextDouble();double tetha=tethad*((Math.PI)/180);System.out.println("coefficient of kinetic friction");
+double uk=input.nextDouble();System.out.println("mass of the skier and equipement");
+double m=input.nextDouble();System.out.println("cross-section area of the (tucked) skier");
+double A=input.nextDouble();System.out.println("drag coefficient");
+double C=input.nextDouble();System.out.println("air density");
+double d=input.nextDouble();
+double Fg=(m*9.8)*(java.lang.Math.sin(tetha)-uk*java.lang.Math.cos(tetha));
+double Vt=Math.sqrt((2*Fg)/(C*d*A));
+double dVt=(-0.5)*Math.sqrt(((2*Fg)/(d*A)))*(Math.pow(C,-1.5));
+System.out.println(dVt);
+System.out.println("The terminal speed is "+Vt+" m/s");
+System.out.println("The variation is "+dVt+" m/s");
+break;}
+	case 47:{System.out.println("enter: ");System.out.println("mass");
+double m=input.nextDouble();System.out.println("radius of the circle");
+double r=input.nextDouble();System.out.println("constant speed");
+double V=input.nextDouble();
+double T=2*r*(Math.PI)/V;
+double N1= m*(9.8-(V*V)/r);
+double N2= m*(9.8+(V*V)/r);
+System.out.println("The period of the motion is: "+T+" s");
+System.out.println("The Normal force at the highest point is: "+N1+" N");
+System.out.println("The Normal force at the highest point is: "+N2+" N");
+}
+	case 57:{System.out.println("enter: ");System.out.println("mass of the puck");
+double m=input.nextDouble();System.out.println("mass of the cylinder");
+double M=input.nextDouble();System.out.println("radius in meters (divide the cm by 100)");
+double r=input.nextDouble();
+double V=Math.sqrt((M*9.8*r)/m);
+System.out.println("the speed that keeps the cylinder at rest is :"+V+" m/s");
+break;}
+	case 70:{System.out.println("enter: ");System.out.println("the mass of the bob");
+double m=input.nextDouble();System.out.println("the lenght of the string");
+double L=input.nextDouble();System.out.println("the circumference of the path followed by thhe bob");
+double c=input.nextDouble();
+double R=c/(2*Math.PI);
+double tetha=java.lang.Math.acos(R/L);
+double t=(m*9.8)/(java.lang.Math.sin(tetha));
+double V=Math.sqrt(t*(java.lang.Math.cos(tetha))*R/m);
+double T=c/V;
+System.out.println("the tension in the string is "+t+" N");
+System.out.println("the period of motion is "+T+" s");
+	break;}
+}
+}
+break;
+}
+
+
+
+else if (chapter==7) { while(i>0) { 	System.out.println("enter exercice number (no zeros on the left)");exercice=input.nextInt();
+switch(exercice) {
+	case 6:{break;} //TO CONTINUE LATER
+	case 12:{System.out.println("enter: ");System.out.println("The distance the nut is pushed");
+double d=input.nextDouble();System.out.println("Ws");
+double Ws=input.nextDouble();System.out.println("The supposed initial kinetic energy in question b)");
+double Ki=input.nextDouble();
+double F=Ws/d;
+double K=Ws+Ki;
+System.out.println("the magnitude of the force is "+F+" N");
+System.out.println("the kinetic energy at the end of the travelled distance is "+K+" J");
+break;}
+	case 22:{System.out.println("enter: ");System.out.println("The vertical distance required for the lift");
+double d=input.nextDouble();System.out.println("speed reached by the accelerated spelunker (stage 1)");
+double v1=input.nextDouble();System.out.println("mass of the rescue");
+double m=input.nextDouble();
+double W1=m*9.8*d+0.5*m*v1*v1;
+double W2=m*9.8*d;
+double W3=m*9.8*d-0.5*m*v1*v1;
+System.out.println("stage 1: "+W1+" J");
+System.out.println("stage 2: "+W2+" J");
+System.out.println("stage 3: "+W3+" J");
+break;}
+	case 54:{System.out.println("enter: ");System.out.println("mass of the body");
+double m=input.nextDouble();System.out.println("scale of the vertical axis Fs");
+double Fs=input.nextDouble();System.out.println("velocity of the body at x=0");
+double v0=input.nextDouble();System.out.println("requested x in the question a)");
+double xa=input.nextDouble();System.out.println("requested kineric energy in the question b)");
+double Kb=input.nextDouble();System.out.println("requested x in the question a)");
+double Ki=0.5*m*v0*v0;
+double W01=Fs/2;
+double W12=-W01;
+double W2xa=-(xa-2)*Fs;
+double Ka=W01+W12+W2xa+Ki;
+double xb=-(Kb-Ka-Fs*xa)/(Fs);
+double K1=Ki+W01;
+System.out.println("the kinetic energy of the body at "+xa+" m"+" is "+Ka+" J");
+System.out.println("at x= "+xb	+" m the kinetic energy of the body will reach "+Kb+" J");
+System.out.println("the maximum kinetic energy of the body between x=0 and x=5 is "+K1+" J");
+break;}
+
+}	
+}			
+}	
+		
+		}
+	}
+}
+
+ 
