@@ -1,0 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 20 23:06:41 2019
+
+@author: Georges Aynati
+"""
+
+def WrapperMove(n,start1=1,start2=2,intermediate=3,destination=4):
+    def moveDisks(n,start,intermediate,destination):
+        if n>=2:
+            moveDisks(n-1,start,destination,intermediate)
+        print("Move disk","from",start,"to",destination)
+        if n>=2:
+            moveDisks(n-1,destination,intermediate,start)
+    if n>=2:
+        moveDisks(n-1,start1,destination,intermediate)
+    print("move disk from",start1,"to",destination)
+    if n>=2:
+        moveDisks(n-1,start2,destination,start1,)
+    print("move disk from",start2,"to",destination)
+    if n>=2:
+        WrapperMove(n-1,start1,intermediate,start2,destination)
+N=0
+WrapperMove(3)
