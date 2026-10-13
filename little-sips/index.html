@@ -603,15 +603,25 @@
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function keyOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-  function todayKey() { return keyOf(new Date()); }
+  /* A new day starts at 4 am, so a late-night sip still counts for the day before. */
+  var DAY_STARTS = 4;
+  function nowDay() { var d = new Date(); d.setHours(d.getHours() - DAY_STARTS); return d; }
+  function todayKey() { return keyOf(nowDay()); }
   function dateOf(key) { var p = key.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
   function shift(key, n) { var d = dateOf(key); d.setDate(d.getDate() + n); return keyOf(d); }
 
   function dayRec(key) { return state.days[key] || null; }
   function todayL() { var r = dayRec(todayKey()); return r ? r.l : 0; }
-  function setTodayL(l) { state.days[todayKey()] = { l: Math.round(l * 1000) / 1000, g: state.goal }; }
-  function done(key) { var r = dayRec(key); return !!r && r.l >= r.g - 0.0005; }
+  /* A heart, once earned, stays for the day (h: true), even if the bottle is reset. */
+  function setTodayL(l) {
+    var k = todayKey(), prev = dayRec(k);
+    var rec = { l: Math.round(l * 1000) / 1000, g: state.goal };
+    if ((prev && prev.h) || rec.l >= rec.g - 0.0005) rec.h = true;
+    state.days[k] = rec;
+  }
+  function done(key) { var r = dayRec(key); return !!r && (r.h === true || r.l >= r.g - 0.0005); }
   function reached() { return done(todayKey()); }
+  function full() { return todayL() >= state.goal - 0.0005; }
 
   function streak() {
     var k = todayKey(), n = 0;
@@ -634,7 +644,9 @@
   function cleanDay(r) {
     if (!r || typeof r.l !== 'number' || !isFinite(r.l)) return null;
     if (typeof r.g !== 'number' || !isFinite(r.g) || r.g <= 0) return null;
-    return { l: Math.min(Math.max(0, r.l), 999), g: Math.min(r.g, 10) };
+    var out = { l: Math.min(Math.max(0, r.l), 999), g: Math.min(r.g, 10) };
+    if (r.h === true) out.h = true;
+    return out;
   }
 
   function clean(raw) {
@@ -688,12 +700,16 @@
 
   function redo(base, ops) {
     var next = { goal: base.goal, t: base.t, days: {} };
-    Object.keys(base.days).forEach(function (k) { next.days[k] = { l: base.days[k].l, g: base.days[k].g }; });
+    Object.keys(base.days).forEach(function (k) {
+      var d = base.days[k];
+      next.days[k] = d.h ? { l: d.l, g: d.g, h: true } : { l: d.l, g: d.g };
+    });
     ops.forEach(function (op) {
       var k = todayKey(), r = next.days[k] || { l: 0, g: next.goal };
       if (op.k === 'add') r.l = Math.round((r.l + op.v) * 1000) / 1000;
       else if (op.k === 'goal') { next.goal = op.v; r.g = op.v; }
       else if (op.k === 'reset') r.l = 0;
+      if (r.l >= r.g - 0.0005) r.h = true;
       next.days[k] = r;
     });
     return next;
@@ -790,7 +806,7 @@
     var y = total <= 0 ? Y_EMPTY : Y_BOTTOM - p * (Y_BOTTOM - Y_FULL);
     level.style.transform = 'translateY(' + y + 'px)';
 
-    var mood = total <= 0 ? 'thirsty' : reached() ? 'joy' : p < 0.5 ? 'sip' : 'happy';
+    var mood = total <= 0 ? 'thirsty' : full() ? 'joy' : p < 0.5 ? 'sip' : 'happy';
     bottle.setAttribute('data-mood', mood);
     bottle.setAttribute('aria-label', 'Water bottle, ' + Math.round(p * 100) + ' percent full');
 
@@ -944,7 +960,7 @@
       input.value = fmt(state.goal);
     } else {
       $('sheetTitle').textContent = 'Reset the bottle?';
-      $('sheetHint').textContent = 'This empties the bottle. Your goal stays the same.';
+      $('sheetHint').textContent = 'This empties today\'s water. Your goal, your hearts and your streak stay.';
       primary.textContent = 'Reset bottle';
       cancel.textContent = 'Keep it';
     }
@@ -979,14 +995,14 @@
     if (mode === 'add') {
       if (!isFinite(v) || v <= 0) { errorEl.textContent = 'Enter an amount in liters, like 0.25.'; return; }
       if (v > 5) { errorEl.textContent = 'Enter 5 L or less at a time.'; return; }
-      var wasReached = reached();
+      var wasReached = full();
       setTodayL(todayL() + v);
       note({ k: 'add', v: v });
       save();
       closeSheet();
       render();
       playAdd();
-      if (!wasReached && reached()) {
+      if (!wasReached && full()) {
         setTimeout(celebrate, reduceMotion ? 0 : 900);
       } else {
         replay(wrap, 'gulp');
@@ -994,15 +1010,15 @@
     } else if (mode === 'goal') {
       if (!isFinite(v) || v <= 0) { errorEl.textContent = 'Enter a goal in liters, like 2.'; return; }
       if (v > 10) { errorEl.textContent = 'Pick a goal of 10 L or less.'; return; }
-      var wasDone = reached();
+      var wasDone = full();
       state.goal = Math.round(v * 100) / 100;
       var rec = dayRec(todayKey());
-      if (rec) rec.g = state.goal;
+      if (rec) { rec.g = state.goal; if (rec.l >= rec.g - 0.0005) rec.h = true; }
       note({ k: 'goal', v: state.goal });
       save();
       closeSheet();
       render();
-      if (!wasDone && reached()) setTimeout(celebrate, reduceMotion ? 0 : 400);
+      if (!wasDone && full()) setTimeout(celebrate, reduceMotion ? 0 : 400);
     }
   }
 
@@ -1071,7 +1087,7 @@
 
   function drawCal() {
     var y = calMonth.getFullYear(), m = calMonth.getMonth();
-    var now = new Date(), tk = todayKey(), hearts = 0;
+    var now = nowDay(), tk = todayKey(), hearts = 0;
     calTitle.textContent = calMonth.toLocaleDateString('en', { month: 'long', year: 'numeric' });
     calNext.disabled = y > now.getFullYear() || (y === now.getFullYear() && m >= now.getMonth());
 
@@ -1096,7 +1112,7 @@
   }
 
   function openCal() {
-    var now = new Date();
+    var now = nowDay();
     calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     drawCal();
     calOverlay.hidden = false;
