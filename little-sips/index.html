@@ -112,6 +112,38 @@
     letter-spacing: .01em;
   }
 
+  /* streak */
+  .streak {
+    position: relative;
+    z-index: 1;
+    margin-top: 8px;
+    min-height: 34px;
+    padding: 0 12px 0 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--card);
+    font-size: .9rem;
+    font-weight: 700;
+    box-shadow: 0 2px 0 var(--shadow);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .streak:active { transform: translateY(2px); box-shadow: 0 0 0 var(--shadow); }
+  .streak svg { width: 20px; height: 20px; flex: none; }
+  .streak .h {
+    fill: var(--field);
+    stroke: var(--ink);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: fill .4s;
+  }
+  .streak.alive .h { fill: var(--pink); }
+  .streak.today .h { animation: beat 1.1s ease-in-out infinite; }
+
   /* bottle */
   .stage {
     position: relative;
@@ -212,7 +244,7 @@
     font-size: 1.05rem;
     line-height: 1.4;
   }
-  .status.pop { animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+  .pop { animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
   @keyframes pop {
     0% { transform: scale(.7); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
@@ -369,6 +401,54 @@
     text-align: center;
   }
 
+  /* calendar */
+  .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .cal-head h2 { flex: 1; text-align: center; font-size: 1.25rem; }
+  .cal-nav {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    padding: 0;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--card);
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 2px 0 var(--shadow);
+  }
+  .cal-nav:active { transform: translateY(2px); box-shadow: 0 0 0 var(--shadow); }
+  .cal-nav:disabled { opacity: .3; }
+  .cal-grid {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px 2px;
+  }
+  .cal-grid .wd { text-align: center; font-size: .75rem; font-weight: 700; color: var(--ink-soft); }
+  .cell {
+    height: 46px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    font-size: .9rem;
+    font-weight: 700;
+  }
+  .cell .d {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border: 2px solid transparent;
+    border-radius: 50%;
+  }
+  .cell.today .d { border-color: var(--ink); }
+  .cell.future { opacity: .35; }
+  .cell svg { width: 20px; height: 20px; visibility: hidden; }
+  .cell.done svg { visibility: visible; }
+  .cal-sum { margin: 12px 0 0; min-height: 1.4em; text-align: center; color: var(--ink-soft); font-size: .95rem; line-height: 1.4; }
+
   /* party */
   .party { position: fixed; inset: 0; z-index: 20; pointer-events: none; overflow: hidden; }
   .bit { position: absolute; display: block; }
@@ -382,6 +462,10 @@
 <body>
 <main class="app">
   <h1>Little sips</h1>
+  <button class="streak" id="streakBtn" type="button" aria-label="Streak and calendar">
+    <svg viewBox="-14 -14 28 28" aria-hidden="true"><path class="h" d="M0 9C-14 -1 -9 -12 0 -4.5C9 -12 14 -1 0 9Z"/></svg>
+    <span id="streakText">Start a streak today</span>
+  </button>
 
   <div class="stage">
     <div class="bottle-wrap" id="bottleWrap">
@@ -493,22 +577,85 @@
   </div>
 </div>
 
+<div class="overlay" id="calOverlay" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="calTitle">
+    <div class="cal-head">
+      <button class="cal-nav" id="calPrev" type="button" aria-label="Previous month">&#8249;</button>
+      <h2 id="calTitle"></h2>
+      <button class="cal-nav" id="calNext" type="button" aria-label="Next month">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <p class="cal-sum" id="calSum"></p>
+    <button class="quiet" id="calClose" type="button">Close</button>
+  </div>
+</div>
+
 <div class="party" id="party" aria-hidden="true"></div>
 
 <script>
 (function () {
   var KEY = 'little-sips';
   var Y_EMPTY = 370, Y_BOTTOM = 344, Y_FULL = 122;
-  var state = { total: 0, goal: 2, t: 0 };
+
+  /* One record per day: days['2026-10-14'] = { l: liters drunk, g: goal that day }.
+     The bottle shows today's record, so it starts empty each morning on its own. */
+  var state = { goal: 2, t: 0, days: {} };
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function keyOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function todayKey() { return keyOf(new Date()); }
+  function dateOf(key) { var p = key.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function shift(key, n) { var d = dateOf(key); d.setDate(d.getDate() + n); return keyOf(d); }
+
+  function dayRec(key) { return state.days[key] || null; }
+  function todayL() { var r = dayRec(todayKey()); return r ? r.l : 0; }
+  function setTodayL(l) { state.days[todayKey()] = { l: Math.round(l * 1000) / 1000, g: state.goal }; }
+  function done(key) { var r = dayRec(key); return !!r && r.l >= r.g - 0.0005; }
+  function reached() { return done(todayKey()); }
+
+  function streak() {
+    var k = todayKey(), n = 0;
+    if (!done(k)) k = shift(k, -1);
+    while (done(k)) { n++; k = shift(k, -1); }
+    return n;
+  }
+
+  function bestStreak() {
+    var best = 0, run = 0, prev = null;
+    Object.keys(state.days).sort().forEach(function (k) {
+      if (!done(k)) { run = 0; prev = null; return; }
+      run = (prev && shift(prev, 1) === k) ? run + 1 : 1;
+      prev = k;
+      if (run > best) best = run;
+    });
+    return best;
+  }
+
+  function cleanDay(r) {
+    if (!r || typeof r.l !== 'number' || !isFinite(r.l)) return null;
+    if (typeof r.g !== 'number' || !isFinite(r.g) || r.g <= 0) return null;
+    return { l: Math.min(Math.max(0, r.l), 999), g: Math.min(r.g, 10) };
+  }
 
   function clean(raw) {
-    if (!raw || typeof raw.total !== 'number' || typeof raw.goal !== 'number') return null;
-    if (!isFinite(raw.total) || !isFinite(raw.goal) || raw.goal <= 0) return null;
-    return {
-      total: Math.min(Math.max(0, raw.total), 999),
+    if (!raw || typeof raw.goal !== 'number' || !isFinite(raw.goal) || raw.goal <= 0) return null;
+    var out = {
       goal: Math.min(raw.goal, 10),
-      t: typeof raw.t === 'number' && isFinite(raw.t) && raw.t > 0 ? raw.t : 0
+      t: typeof raw.t === 'number' && isFinite(raw.t) && raw.t > 0 ? raw.t : 0,
+      days: {}
     };
+    if (raw.days && typeof raw.days === 'object') {
+      Object.keys(raw.days).forEach(function (k) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+        var r = cleanDay(raw.days[k]);
+        if (r) out.days[k] = r;
+      });
+    } else if (typeof raw.total === 'number' && isFinite(raw.total)) {
+      /* the first version kept one running total: file it under the day it was last changed */
+      var k0 = out.t ? keyOf(new Date(out.t)) : todayKey();
+      out.days[k0] = { l: Math.min(Math.max(0, raw.total), 999), g: out.goal };
+    }
+    return out;
   }
 
   function keepLocal() {
@@ -516,8 +663,12 @@
   }
 
   try {
-    var local = clean(JSON.parse(localStorage.getItem(KEY) || 'null'));
-    if (local) state = local;
+    var rawLocal = JSON.parse(localStorage.getItem(KEY) || 'null');
+    var local = clean(rawLocal);
+    if (local) {
+      state = local;
+      if (!rawLocal.days) keepLocal();
+    }
   } catch (e) {}
   var loadedT = state.t;
 
@@ -536,11 +687,14 @@
   function note(op) { if (!synced) early.push(op); }
 
   function redo(base, ops) {
-    var next = { total: base.total, goal: base.goal, t: base.t };
+    var next = { goal: base.goal, t: base.t, days: {} };
+    Object.keys(base.days).forEach(function (k) { next.days[k] = { l: base.days[k].l, g: base.days[k].g }; });
     ops.forEach(function (op) {
-      if (op.k === 'add') next.total = Math.round((next.total + op.v) * 1000) / 1000;
-      else if (op.k === 'goal') next.goal = op.v;
-      else if (op.k === 'reset') next.total = 0;
+      var k = todayKey(), r = next.days[k] || { l: 0, g: next.goal };
+      if (op.k === 'add') r.l = Math.round((r.l + op.v) * 1000) / 1000;
+      else if (op.k === 'goal') { next.goal = op.v; r.g = op.v; }
+      else if (op.k === 'reset') r.l = 0;
+      next.days[k] = r;
     });
     return next;
   }
@@ -561,7 +715,7 @@
     if (writing && !isRetry) { dirty = true; return; }
     writing = true;
     dirty = false;
-    cloudDoc.set({ total: state.total, goal: state.goal, t: state.t }).then(function () {
+    cloudDoc.set({ goal: state.goal, t: state.t, days: state.days }).then(function () {
       writing = false;
       showSaved('cloud');
       if (dirty) pushCloud();
@@ -623,25 +777,33 @@
   var goalBtn = $('goalBtn'), overlay = $('overlay'), field = $('field');
   var input = $('amount'), chips = $('chips'), errorEl = $('error');
   var primary = $('primary'), cancel = $('cancel'), party = $('party');
+  var streakBtn = $('streakBtn'), streakText = $('streakText');
+  var calOverlay = $('calOverlay'), calTitle = $('calTitle'), calGrid = $('calGrid');
+  var calSum = $('calSum'), calPrev = $('calPrev'), calNext = $('calNext');
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function fmt(n) { return String(Math.round(n * 100) / 100); }
-  function reached() { return state.total >= state.goal - 0.0005; }
 
   function render() {
-    var p = Math.min(state.total / state.goal, 1);
-    var y = state.total <= 0 ? Y_EMPTY : Y_BOTTOM - p * (Y_BOTTOM - Y_FULL);
+    var total = todayL();
+    var p = Math.min(total / state.goal, 1);
+    var y = total <= 0 ? Y_EMPTY : Y_BOTTOM - p * (Y_BOTTOM - Y_FULL);
     level.style.transform = 'translateY(' + y + 'px)';
 
-    var mood = state.total <= 0 ? 'thirsty' : reached() ? 'joy' : p < 0.5 ? 'sip' : 'happy';
+    var mood = total <= 0 ? 'thirsty' : reached() ? 'joy' : p < 0.5 ? 'sip' : 'happy';
     bottle.setAttribute('data-mood', mood);
     bottle.setAttribute('aria-label', 'Water bottle, ' + Math.round(p * 100) + ' percent full');
 
-    totalEl.textContent = fmt(state.total);
+    totalEl.textContent = fmt(total);
     ofEl.textContent = 'of ' + fmt(state.goal) + ' L';
     goalBtn.textContent = 'Goal ' + fmt(state.goal) + ' L';
 
-    var left = fmt(Math.max(state.goal - state.total, 0.01));
+    var n = streak();
+    streakText.textContent = n === 0 ? 'Start a streak today' : n === 1 ? '1 day streak' : n + ' day streak';
+    streakBtn.classList.toggle('alive', n > 0);
+    streakBtn.classList.toggle('today', reached());
+
+    var left = fmt(Math.max(state.goal - total, 0.01));
     statusEl.textContent =
       mood === 'thirsty' ? 'Tap + and fill me up to the heart.' :
       mood === 'sip' ? 'Good start! ' + left + ' L to go.' :
@@ -804,7 +966,7 @@
 
   function submit() {
     if (mode === 'reset') {
-      state.total = 0;
+      setTodayL(0);
       note({ k: 'reset' });
       save();
       closeSheet();
@@ -818,7 +980,7 @@
       if (!isFinite(v) || v <= 0) { errorEl.textContent = 'Enter an amount in liters, like 0.25.'; return; }
       if (v > 5) { errorEl.textContent = 'Enter 5 L or less at a time.'; return; }
       var wasReached = reached();
-      state.total = Math.round((state.total + v) * 1000) / 1000;
+      setTodayL(todayL() + v);
       note({ k: 'add', v: v });
       save();
       closeSheet();
@@ -832,11 +994,15 @@
     } else if (mode === 'goal') {
       if (!isFinite(v) || v <= 0) { errorEl.textContent = 'Enter a goal in liters, like 2.'; return; }
       if (v > 10) { errorEl.textContent = 'Pick a goal of 10 L or less.'; return; }
+      var wasDone = reached();
       state.goal = Math.round(v * 100) / 100;
+      var rec = dayRec(todayKey());
+      if (rec) rec.g = state.goal;
       note({ k: 'goal', v: state.goal });
       save();
       closeSheet();
       render();
+      if (!wasDone && reached()) setTimeout(celebrate, reduceMotion ? 0 : 400);
     }
   }
 
@@ -890,6 +1056,7 @@
 
   function celebrate() {
     replay(statusEl, 'pop');
+    replay(streakBtn, 'pop');
     playGoal();
     if (reduceMotion) return;
     replay(wrap, 'hop');
@@ -897,6 +1064,59 @@
     setTimeout(function () { burst(14); }, 550);
     setTimeout(function () { burst(14); }, 1100);
   }
+
+  /* calendar */
+  var HEART = '<svg viewBox="-14 -14 28 28" aria-hidden="true"><path d="M0 9C-14 -1 -9 -12 0 -4.5C9 -12 14 -1 0 9Z" fill="var(--pink)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/></svg>';
+  var calMonth = null;
+
+  function drawCal() {
+    var y = calMonth.getFullYear(), m = calMonth.getMonth();
+    var now = new Date(), tk = todayKey(), hearts = 0;
+    calTitle.textContent = calMonth.toLocaleDateString('en', { month: 'long', year: 'numeric' });
+    calNext.disabled = y > now.getFullYear() || (y === now.getFullYear() && m >= now.getMonth());
+
+    var html = '';
+    ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(function (w) { html += '<div class="wd">' + w + '</div>'; });
+    var lead = (new Date(y, m, 1).getDay() + 6) % 7;
+    var count = new Date(y, m + 1, 0).getDate();
+    for (var i = 0; i < lead; i++) html += '<div class="cell"></div>';
+    for (var d = 1; d <= count; d++) {
+      var k = keyOf(new Date(y, m, d)), cls = 'cell', label = '';
+      if (k === tk) cls += ' today';
+      if (k > tk) cls += ' future';
+      if (done(k)) { cls += ' done'; hearts++; label = ' aria-label="' + d + ', goal reached"'; }
+      html += '<div class="' + cls + '"' + label + '><span class="d">' + d + '</span>' + HEART + '</div>';
+    }
+    calGrid.innerHTML = html;
+
+    var best = bestStreak();
+    calSum.textContent =
+      (hearts === 0 ? 'No hearts this month yet.' : hearts === 1 ? '1 heart this month.' : hearts + ' hearts this month.') +
+      (best > 0 ? ' Best streak: ' + best + (best === 1 ? ' day.' : ' days.') : '');
+  }
+
+  function openCal() {
+    var now = new Date();
+    calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    drawCal();
+    calOverlay.hidden = false;
+    $('calClose').focus({ preventScroll: true });
+  }
+
+  function closeCal() {
+    calOverlay.hidden = true;
+    try { streakBtn.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  streakBtn.addEventListener('click', openCal);
+  $('calClose').addEventListener('click', closeCal);
+  calOverlay.addEventListener('click', function (e) { if (e.target === calOverlay) closeCal(); });
+  calPrev.addEventListener('click', function () { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1); drawCal(); });
+  calNext.addEventListener('click', function () { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1); drawCal(); });
+
+  /* a new day: the bottle starts empty on its own */
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) render(); });
+  setInterval(render, 60000);
 
   /* wiring */
   $('addBtn').addEventListener('click', function () { wake(); openSheet('add'); });
@@ -907,7 +1127,11 @@
   overlay.addEventListener('click', function (e) { if (e.target === overlay) closeSheet(); });
   input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
   input.addEventListener('input', function () { errorEl.textContent = ''; });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !overlay.hidden) closeSheet(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!overlay.hidden) closeSheet();
+    if (!calOverlay.hidden) closeCal();
+  });
   chips.addEventListener('click', function (e) {
     var chip = e.target.closest ? e.target.closest('.chip') : null;
     if (!chip) return;
