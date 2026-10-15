@@ -200,6 +200,7 @@
   [data-mood="joy"] .m-joy,
   [data-mood="joy"] .eyes-joy { display: inline; }
   [data-mood="joy"] .eyes-open { display: none; }
+  [data-mood="thirsty"] .eye { r: 7.5; }
 
   .goal-heart .h { fill: var(--glass); transform-box: fill-box; transform-origin: center; transition: fill .4s; }
   [data-mood="joy"] .goal-heart .h { fill: var(--pink); animation: beat 1.1s ease-in-out infinite; }
@@ -513,17 +514,23 @@
         <ellipse cx="80" cy="227" rx="10" ry="6" fill="var(--pink)" opacity=".95"/>
         <ellipse cx="160" cy="227" rx="10" ry="6" fill="var(--pink)" opacity=".95"/>
         <g class="eyes-open">
-          <circle cx="97" cy="210" r="6" fill="var(--ink)"/>
-          <circle cx="143" cy="210" r="6" fill="var(--ink)"/>
+          <circle class="eye" cx="97" cy="210" r="6" fill="var(--ink)"/>
+          <circle class="eye" cx="143" cy="210" r="6" fill="var(--ink)"/>
           <circle cx="95" cy="208" r="2" fill="var(--glass)"/>
           <circle cx="141" cy="208" r="2" fill="var(--glass)"/>
+          <circle class="mood m-thirsty" cx="99.5" cy="212.5" r="1.3" fill="var(--glass)"/>
+          <circle class="mood m-thirsty" cx="145.5" cy="212.5" r="1.3" fill="var(--glass)"/>
+        </g>
+        <g class="mood m-thirsty" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round">
+          <path d="M89 200q7 -2 13 -5"/>
+          <path d="M151 200q-7 -2 -13 -5"/>
         </g>
         <g class="eyes-joy" fill="none" stroke="var(--ink)" stroke-width="4.5" stroke-linecap="round">
           <path d="M89 214q8 -11 16 0"/>
           <path d="M135 214q8 -11 16 0"/>
         </g>
         <g fill="none" stroke="var(--ink)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-          <path class="mood m-thirsty" d="M110 229q5 -5 10 0t10 0"/>
+          <path class="mood m-thirsty" d="M113 228q7 -5 14 0"/>
           <path class="mood m-sip" d="M111 224q9 8 18 0"/>
           <path class="mood m-happy" d="M106 222q14 15 28 0"/>
         </g>
